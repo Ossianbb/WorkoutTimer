@@ -8,7 +8,7 @@ body {
 }
 
 .container {
-  max-width: 760px;
+  max-width: 840px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -22,6 +22,19 @@ h1 { margin: 0 0 16px; }
   padding: 16px;
 }
 
+.subcard {
+  margin: 12px 0 16px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #2a2f3a;
+  background: #101219;
+}
+
+.subcard h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
 .hidden { display: none; }
 
 .grid {
@@ -32,7 +45,8 @@ h1 { margin: 0 0 16px; }
 }
 
 label { display: block; font-size: 14px; color: #cfcfcf; }
-input, textarea {
+
+input, textarea, select {
   width: 100%;
   margin-top: 6px;
   padding: 10px;
@@ -42,14 +56,15 @@ input, textarea {
   color: #e8e8e8;
 }
 
-.block { margin-top: 10px; }
-
 .row {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 12px;
   flex-wrap: wrap;
+  align-items: end;
 }
+
+.grow { flex: 1; }
 
 button {
   padding: 10px 14px;
@@ -64,55 +79,117 @@ button:hover { filter: brightness(1.08); }
 
 button.secondary { background: transparent; }
 button.danger { border-color: #5a2630; background: #2b1216; }
+button.primary { border-color: #1d5b3d; background: #123322; }
+button.warning { border-color: #6d4a12; background: #33240a; }
 
-/* Toggle button on setup page (Circuit B) */
 button.secondary.active {
   border-color: #2a5a9a;
   background: rgba(159, 211, 255, 0.12);
 }
 
-/* "Start / Resume" = green */
-button.primary {
-  border-color: #1d5b3d;
-  background: #123322;
-}
+.hint { margin-top: 10px; color: #a9a9a9; font-size: 13px; line-height: 1.35; }
 
-/* "Pause" = orange */
-button.warning {
-  border-color: #6d4a12;
-  background: #33240a;
-}
-
-.hint { margin-top: 12px; color: #a9a9a9; font-size: 13px; }
-
-.statusRow {
+/* Exercise list editor */
+.exerciseList {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
 }
 
-.phase {
+.exerciseRow {
+  display: grid;
+  grid-template-columns: 1fr 180px 44px;
+  gap: 10px;
+  align-items: end;
+}
+
+.exerciseRow .small {
+  font-size: 12px;
+  color: #a9a9a9;
+}
+
+.iconBtn {
+  width: 44px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Run screen */
+.runCard {
+  overflow: hidden;
+}
+
+.runHeader {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.bigTime {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 1px solid #2a2f3a;
+  background: #0f1115;
+  text-align: center;
+}
+
+.phaseChip {
+  width: fit-content;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid #2a2f3a;
+  background: #0f1115;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #9fd3ff;
 }
 
-.phase.work { color: #9fd3ff; }
-.phase.rest { color: #ffd39f; }
+/* Colour states driven by JS */
+.runView-work .bigTime { border-color: #1d5b3d; }
+.runView-rest .bigTime { border-color: #6d4a12; }
+.runView-warning .bigTime { border-color: #2a5a9a; } /* <=15s on WORK */
+.runView-urgent .bigTime { border-color: #5a2630; }  /* <=5s anywhere */
 
-.exercise {
-  font-size: 20px;
-  margin-top: 6px;
-  min-height: 1.2em; /* prevents layout jump when blank during REST */
+.runView-work .phaseChip { color: #9fd3ff; }
+.runView-rest .phaseChip { color: #ffd39f; }
+.runView-warning .phaseChip { color: #9fd3ff; }
+.runView-urgent .phaseChip { color: #ffd39f; }
+
+.runInfo {
+  padding: 10px 4px 2px;
 }
 
-.time {
-  font-size: 52px;
-  font-weight: 700;
+.labelRow {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(42, 47, 58, 0.6);
+}
+
+.labelTitle {
+  color: #b9b9b9;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.labelValue {
+  font-size: 18px;
+}
+
+.subtle {
+  color: #c7c7c7;
 }
 
 .progress {
   margin-top: 10px;
   color: #b9b9b9;
+  font-size: 13px;
 }

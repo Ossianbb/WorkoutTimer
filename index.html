@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workout Timer</title>
     <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0b0c10" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   </head>
   <body>
     <main class="container">
@@ -13,6 +16,36 @@
       <section id="setupView" class="card">
         <h2>Setup</h2>
 
+        <!-- Presets -->
+        <section class="subcard">
+          <h3>Presets</h3>
+
+          <div class="row">
+            <label class="grow">
+              Saved workouts
+              <select id="presetSelect">
+                <option value="">— None —</option>
+              </select>
+            </label>
+
+            <button id="loadPresetBtn" class="secondary" type="button">Load</button>
+            <button id="deletePresetBtn" class="danger" type="button">Delete</button>
+          </div>
+
+          <div class="row">
+            <label class="grow">
+              New preset name
+              <input id="presetNameInput" type="text" placeholder="e.g. Core set 1" />
+            </label>
+            <button id="savePresetBtn" class="primary" type="button">Save as new</button>
+          </div>
+
+          <p class="hint">
+            Tip: Presets are saved in your browser (LocalStorage) on this device.
+          </p>
+        </section>
+
+        <!-- Global timings -->
         <div class="grid">
           <label>
             Exercise time (seconds)
@@ -35,42 +68,53 @@
           </label>
         </div>
 
-        <label class="block">
-          Circuit A exercises (one per line, in order)
-          <textarea id="exercises" rows="8">Leg raises
-Side plank (L)
-Side plank (R)
-Flutter kicks
-Plank</textarea>
-        </label>
+        <!-- Circuit A exercises -->
+        <section class="subcard">
+          <h3>Circuit A exercises</h3>
+          <p class="hint">Set “seconds” to override the global exercise time (leave blank to use the global time).</p>
 
+          <div id="exerciseListA" class="exerciseList"></div>
+
+          <div class="row">
+            <button id="addExerciseABtn" class="secondary" type="button">+ Add exercise</button>
+          </div>
+        </section>
+
+        <!-- Circuit B toggle -->
         <div class="row">
           <button id="toggleCircuitBBtn" type="button" class="secondary" aria-pressed="false">
             + Add Circuit B
           </button>
         </div>
 
-        <section id="circuitBSection" class="hidden">
+        <!-- Circuit B -->
+        <section id="circuitBSection" class="subcard hidden">
+          <h3>Circuit B</h3>
+
           <div class="grid">
             <label>
               Circuit B repeats
               <input id="circuitBRepeats" type="number" min="1" value="2" />
             </label>
-            <div></div>
+
+            <label>
+              Transition rest A → B (seconds)
+              <input id="transitionRestSeconds" type="number" min="0" value="60" />
+            </label>
           </div>
 
-          <label class="block">
-            Circuit B exercises (one per line, in order)
-            <textarea id="exercisesB" rows="6">Push-ups
-Squats
-Mountain climbers
-Sit-ups</textarea>
-          </label>
+          <p class="hint">Transition rest happens once between Circuit A and Circuit B.</p>
+
+          <div id="exerciseListB" class="exerciseList"></div>
+
+          <div class="row">
+            <button id="addExerciseBBtn" class="secondary" type="button">+ Add exercise</button>
+          </div>
         </section>
 
         <div class="row">
-          <button id="startBtn">Start</button>
-          <button id="loadExampleBtn" class="secondary">Load example</button>
+          <button id="startBtn" class="primary" type="button">Go to run screen</button>
+          <button id="loadExampleBtn" class="secondary" type="button">Load example</button>
         </div>
 
         <p class="hint">
@@ -78,27 +122,36 @@ Sit-ups</textarea>
         </p>
       </section>
 
-      <section id="runView" class="card hidden">
-        <div class="statusRow">
-          <div>
-            <div class="phase" id="phaseLabel">Exercise:</div>
-            <div class="exercise" id="exerciseLabel">Leg raises</div>
+      <section id="runView" class="card hidden runCard">
+        <div class="runHeader">
+          <div class="time bigTime" id="timeLabel">00:45</div>
+          <div class="phaseChip" id="phaseLabel">WORK</div>
+        </div>
+
+        <div class="runInfo">
+          <div class="labelRow">
+            <div class="labelTitle">Current</div>
+            <div class="labelValue" id="currentLabel">Leg raises</div>
           </div>
-          <div class="time" id="timeLabel">00:45</div>
-        </div>
 
-        <div class="progress" id="progressLabel">Step 1 / 10</div>
+          <div class="labelRow">
+            <div class="labelTitle">Up next</div>
+            <div class="labelValue subtle" id="nextLabel">Side plank (L)</div>
+          </div>
 
-        <div class="row">
-          <button id="runStartBtn" class="primary">Start</button>
-          <button id="pauseBtn" class="warning">Pause</button>
-          <button id="resumeBtn" class="primary">Resume</button>
-          <button id="skipBtn" class="secondary">Skip</button>
-          <button id="resetBtn" class="danger">Reset</button>
+          <div class="progress" id="progressLabel">Circuit A • Round 1 / 2 • Exercise 1 / 5</div>
         </div>
 
         <div class="row">
-          <button id="backToSetupBtn" class="secondary">Back to setup</button>
+          <button id="runStartBtn" class="primary" type="button">Start</button>
+          <button id="pauseBtn" class="warning" type="button">Pause</button>
+          <button id="resumeBtn" class="primary" type="button">Resume</button>
+          <button id="skipBtn" class="secondary" type="button">Skip</button>
+          <button id="resetBtn" class="danger" type="button">Reset</button>
+        </div>
+
+        <div class="row">
+          <button id="backToSetupBtn" class="secondary" type="button">Back to setup</button>
         </div>
       </section>
     </main>
