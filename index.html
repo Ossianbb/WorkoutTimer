@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workout Timer</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Workout Timer</h1>
+
+      <section id="setupView" class="card">
+        <h2>Setup</h2>
+
+        <div class="grid">
+          <label>
+            Exercise time (seconds)
+            <input id="workSeconds" type="number" min="1" value="45" />
+          </label>
+
+          <label>
+            Rest between exercises (seconds)
+            <input id="restBetweenExercisesSeconds" type="number" min="0" value="15" />
+          </label>
+
+          <label>
+            Rest between circuit repeats (seconds)
+            <input id="restBetweenCircuitsSeconds" type="number" min="0" value="60" />
+          </label>
+
+          <label>
+            Circuit A repeats
+            <input id="circuitRepeats" type="number" min="1" value="2" />
+          </label>
+        </div>
+
+        <label class="block">
+          Circuit A exercises (one per line, in order)
+          <textarea id="exercises" rows="8">Leg raises
+Side plank (L)
+Side plank (R)
+Flutter kicks
+Plank</textarea>
+        </label>
+
+        <div class="row">
+          <button id="toggleCircuitBBtn" type="button" class="secondary" aria-pressed="false">
+            + Add Circuit B
+          </button>
+        </div>
+
+        <section id="circuitBSection" class="hidden">
+          <div class="grid">
+            <label>
+              Circuit B repeats
+              <input id="circuitBRepeats" type="number" min="1" value="2" />
+            </label>
+            <div></div>
+          </div>
+
+          <label class="block">
+            Circuit B exercises (one per line, in order)
+            <textarea id="exercisesB" rows="6">Push-ups
+Squats
+Mountain climbers
+Sit-ups</textarea>
+          </label>
+        </section>
+
+        <div class="row">
+          <button id="startBtn">Start</button>
+          <button id="loadExampleBtn" class="secondary">Load example</button>
+        </div>
+
+        <p class="hint">
+          Tip: Use Live Server so the page auto-refreshes while you edit.
+        </p>
+      </section>
+
+      <section id="runView" class="card hidden">
+        <div class="statusRow">
+          <div>
+            <div class="phase" id="phaseLabel">Exercise:</div>
+            <div class="exercise" id="exerciseLabel">Leg raises</div>
+          </div>
+          <div class="time" id="timeLabel">00:45</div>
+        </div>
+
+        <div class="progress" id="progressLabel">Step 1 / 10</div>
+
+        <div class="row">
+          <button id="runStartBtn" class="primary">Start</button>
+          <button id="pauseBtn" class="warning">Pause</button>
+          <button id="resumeBtn" class="primary">Resume</button>
+          <button id="skipBtn" class="secondary">Skip</button>
+          <button id="resetBtn" class="danger">Reset</button>
+        </div>
+
+        <div class="row">
+          <button id="backToSetupBtn" class="secondary">Back to setup</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
