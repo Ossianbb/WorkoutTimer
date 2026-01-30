@@ -8,7 +8,7 @@ body {
 }
 
 .container {
-  max-width: 840px;
+  max-width: 860px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -31,7 +31,7 @@ h1 { margin: 0 0 16px; }
 }
 
 .subcard h3 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 16px;
 }
 
@@ -41,7 +41,7 @@ h1 { margin: 0 0 16px; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-top: 10px;
 }
 
 label { display: block; font-size: 14px; color: #cfcfcf; }
@@ -64,7 +64,14 @@ input, textarea, select {
   align-items: end;
 }
 
+.topRow {
+  margin-top: 0;
+  align-items: center;
+}
+
 .grow { flex: 1; }
+
+label.mini { width: 140px; }
 
 button {
   padding: 10px 14px;
@@ -89,7 +96,24 @@ button.secondary.active {
 
 .hint { margin-top: 10px; color: #a9a9a9; font-size: 13px; line-height: 1.35; }
 
-/* Exercise list editor */
+/* --------------------------
+   Exercise list UX (fixed)
+   - Name is wide
+   - Secs is narrow (2–3 digits)
+   - Delete button matches input height
+   -------------------------- */
+.exerciseHeader {
+  display: grid;
+  grid-template-columns: 1fr 90px 42px;
+  gap: 10px;
+  margin-top: 10px;
+  color: #b9b9b9;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.secsCol { text-align: left; }
+
 .exerciseList {
   display: flex;
   flex-direction: column;
@@ -99,38 +123,46 @@ button.secondary.active {
 
 .exerciseRow {
   display: grid;
-  grid-template-columns: 1fr 180px 44px;
+  grid-template-columns: 1fr 90px 42px;
   gap: 10px;
-  align-items: end;
+  align-items: center;
 }
 
-.exerciseRow .small {
-  font-size: 12px;
-  color: #a9a9a9;
+.exerciseRow input {
+  margin-top: 0;
+  height: 44px;
+}
+
+.exerciseRow .exerciseSeconds {
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .iconBtn {
-  width: 44px;
-  height: 42px;
+  width: 42px;
+  height: 44px;   /* matches input height */
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 10px;
 }
 
-/* Run screen */
-.runCard {
-  overflow: hidden;
-}
+/* --------------------------
+   Run screen UX
+   -------------------------- */
+.runCard { overflow: hidden; }
 
 .runHeader {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .bigTime {
-  font-size: 72px;
+  font-size: 76px;
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -141,6 +173,12 @@ button.secondary.active {
   text-align: center;
 }
 
+.runSubHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .phaseChip {
   width: fit-content;
   padding: 8px 10px;
@@ -148,27 +186,22 @@ button.secondary.active {
   border: 1px solid #2a2f3a;
   background: #0f1115;
   font-weight: 700;
-  letter-spacing: 0.08em;
 }
 
-/* Colour states driven by JS */
-.runView-work .bigTime { border-color: #1d5b3d; }
-.runView-rest .bigTime { border-color: #6d4a12; }
-.runView-warning .bigTime { border-color: #2a5a9a; } /* <=15s on WORK */
-.runView-urgent .bigTime { border-color: #5a2630; }  /* <=5s anywhere */
-
-.runView-work .phaseChip { color: #9fd3ff; }
-.runView-rest .phaseChip { color: #ffd39f; }
-.runView-warning .phaseChip { color: #9fd3ff; }
-.runView-urgent .phaseChip { color: #ffd39f; }
-
-.runInfo {
-  padding: 10px 4px 2px;
+.countdown {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  min-width: 42px;
+  text-align: right;
+  color: #e8e8e8;
 }
+
+.runInfo { padding: 8px 4px 2px; }
 
 .labelRow {
   display: grid;
-  grid-template-columns: 100px 1fr;
+  grid-template-columns: 92px 1fr;
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid rgba(42, 47, 58, 0.6);
@@ -177,19 +210,28 @@ button.secondary.active {
 .labelTitle {
   color: #b9b9b9;
   font-size: 13px;
-  letter-spacing: 0.02em;
 }
 
-.labelValue {
-  font-size: 18px;
-}
+.labelValue { font-size: 18px; }
+.currentBig { font-size: 24px; font-weight: 700; } /* bigger + more obvious */
 
-.subtle {
-  color: #c7c7c7;
-}
+.subtle { color: #c7c7c7; }
 
 .progress {
   margin-top: 10px;
   color: #b9b9b9;
   font-size: 13px;
 }
+
+.runButtons { margin-top: 14px; }
+.bigBtn { padding: 14px 18px; font-size: 16px; } /* bigger buttons */
+
+/* Colour states driven by JS */
+.runView-exercise .bigTime { border-color: #1d5b3d; }
+.runView-rest .bigTime { border-color: #6d4a12; }
+
+/* halfway on exercise */
+.runView-half .bigTime { border-color: #2a5a9a; }
+
+/* last 3 seconds */
+.runView-final .bigTime { border-color: #5a2630; }

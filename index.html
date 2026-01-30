@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Workout Timer</title>
     <link rel="stylesheet" href="style.css" />
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#0b0c10" />
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   </head>
   <body>
     <main class="container">
@@ -45,33 +42,49 @@
           </p>
         </section>
 
-        <!-- Global timings -->
-        <div class="grid">
-          <label>
-            Exercise time (seconds)
-            <input id="workSeconds" type="number" min="1" value="45" />
-          </label>
-
-          <label>
-            Rest between exercises (seconds)
-            <input id="restBetweenExercisesSeconds" type="number" min="0" value="15" />
-          </label>
-
-          <label>
-            Rest between circuit repeats (seconds)
-            <input id="restBetweenCircuitsSeconds" type="number" min="0" value="60" />
-          </label>
-
-          <label>
-            Circuit A repeats
-            <input id="circuitRepeats" type="number" min="1" value="2" />
-          </label>
-        </div>
-
-        <!-- Circuit A exercises -->
+        <!-- Global settings (clear section at top) -->
         <section class="subcard">
-          <h3>Circuit A exercises</h3>
-          <p class="hint">Set “seconds” to override the global exercise time (leave blank to use the global time).</p>
+          <h3>Global timings</h3>
+          <div class="grid">
+            <label>
+              Exercise time (seconds)
+              <input id="workSeconds" type="number" min="1" value="45" />
+            </label>
+
+            <label>
+              Rest between exercises (seconds)
+              <input id="restBetweenExercisesSeconds" type="number" min="0" value="15" />
+            </label>
+
+            <label>
+              Rest between circuit repeats (seconds)
+              <input id="restBetweenCircuitsSeconds" type="number" min="0" value="60" />
+            </label>
+
+            <div></div>
+          </div>
+        </section>
+
+        <!-- Circuit A (repeats moved into this section) -->
+        <section class="subcard">
+          <div class="row topRow">
+            <h3 class="grow">Circuit A</h3>
+
+            <label class="mini">
+              Repeats
+              <input id="circuitRepeats" type="number" min="1" value="2" />
+            </label>
+          </div>
+
+          <p class="hint">
+            Leave “Secs” blank to use the global exercise time.
+          </p>
+
+          <div class="exerciseHeader">
+            <div>Exercise</div>
+            <div class="secsCol">Secs</div>
+            <div></div>
+          </div>
 
           <div id="exerciseListA" class="exerciseList"></div>
 
@@ -89,21 +102,28 @@
 
         <!-- Circuit B -->
         <section id="circuitBSection" class="subcard hidden">
-          <h3>Circuit B</h3>
+          <div class="row topRow">
+            <h3 class="grow">Circuit B</h3>
 
-          <div class="grid">
-            <label>
-              Circuit B repeats
+            <label class="mini">
+              Repeats
               <input id="circuitBRepeats" type="number" min="1" value="2" />
             </label>
+          </div>
 
+          <div class="grid">
             <label>
               Transition rest A → B (seconds)
               <input id="transitionRestSeconds" type="number" min="0" value="60" />
             </label>
+            <div></div>
           </div>
 
-          <p class="hint">Transition rest happens once between Circuit A and Circuit B.</p>
+          <div class="exerciseHeader">
+            <div>Exercise</div>
+            <div class="secsCol">Secs</div>
+            <div></div>
+          </div>
 
           <div id="exerciseListB" class="exerciseList"></div>
 
@@ -122,16 +142,21 @@
         </p>
       </section>
 
+      <!-- Run screen -->
       <section id="runView" class="card hidden runCard">
         <div class="runHeader">
           <div class="time bigTime" id="timeLabel">00:45</div>
-          <div class="phaseChip" id="phaseLabel">WORK</div>
+
+          <div class="runSubHeader">
+            <div class="phaseChip" id="phaseLabel">Exercise</div>
+            <div class="countdown" id="countdownLabel"></div>
+          </div>
         </div>
 
         <div class="runInfo">
           <div class="labelRow">
             <div class="labelTitle">Current</div>
-            <div class="labelValue" id="currentLabel">Leg raises</div>
+            <div class="labelValue currentBig" id="currentLabel">Leg raises</div>
           </div>
 
           <div class="labelRow">
@@ -142,12 +167,12 @@
           <div class="progress" id="progressLabel">Circuit A • Round 1 / 2 • Exercise 1 / 5</div>
         </div>
 
-        <div class="row">
-          <button id="runStartBtn" class="primary" type="button">Start</button>
-          <button id="pauseBtn" class="warning" type="button">Pause</button>
-          <button id="resumeBtn" class="primary" type="button">Resume</button>
-          <button id="skipBtn" class="secondary" type="button">Skip</button>
-          <button id="resetBtn" class="danger" type="button">Reset</button>
+        <div class="row runButtons">
+          <button id="runStartBtn" class="primary bigBtn" type="button">Start</button>
+          <button id="pauseBtn" class="warning bigBtn" type="button">Pause</button>
+          <button id="resumeBtn" class="primary bigBtn" type="button">Resume</button>
+          <button id="skipBtn" class="secondary bigBtn" type="button">Skip</button>
+          <button id="resetBtn" class="danger bigBtn" type="button">Reset</button>
         </div>
 
         <div class="row">
