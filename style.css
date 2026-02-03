@@ -101,7 +101,6 @@ button.secondary.active {
   gap: 8px;
 }
 .row label input[type="checkbox"] { width: auto; margin: 0; }
-.row label input[type="range"] { margin-top: 8px; }
 
 .historyList {
   margin-top: 8px;

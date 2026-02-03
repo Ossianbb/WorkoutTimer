@@ -23,7 +23,6 @@ const SOUND_SETTINGS_KEY = "workoutTimerSoundSettingsV1";
 const soundSettings = {
   beepEnabled: true,
   voiceEnabled: true,
-  volume: 0.7,
 };
 
 function ensureAudio() {
@@ -40,7 +39,7 @@ function beep(freq, ms, type = "sine", gainValue = 0.03) {
   const gain = audioCtx.createGain();
   osc.type = type;
   osc.frequency.value = freq;
-  gain.gain.value = gainValue * soundSettings.volume;
+  gain.gain.value = gainValue;
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   const now = audioCtx.currentTime;
@@ -66,7 +65,7 @@ function speak(text) {
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.0;
     u.pitch = 1.0;
-    u.volume = soundSettings.volume;
+    u.volume = 1.0;
     window.speechSynthesis.speak(u);
   } catch {
     // ignore
@@ -249,7 +248,6 @@ const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 // Sound controls
 const beepEnabledInput = document.getElementById("beepEnabled");
 const voiceEnabledInput = document.getElementById("voiceEnabled");
-const volumeInput = document.getElementById("volumeInput");
 
 // Run controls
 const runStartBtn = document.getElementById("runStartBtn");
@@ -376,9 +374,6 @@ function loadSoundSettings() {
     const parsed = JSON.parse(raw);
     if (typeof parsed?.beepEnabled === "boolean") soundSettings.beepEnabled = parsed.beepEnabled;
     if (typeof parsed?.voiceEnabled === "boolean") soundSettings.voiceEnabled = parsed.voiceEnabled;
-    if (typeof parsed?.volume === "number") {
-      soundSettings.volume = Math.max(0, Math.min(1, parsed.volume));
-    }
   } catch {
     // ignore
   }
@@ -391,7 +386,6 @@ function saveSoundSettings() {
 function applySoundSettingsToUI() {
   if (beepEnabledInput) beepEnabledInput.checked = soundSettings.beepEnabled;
   if (voiceEnabledInput) voiceEnabledInput.checked = soundSettings.voiceEnabled;
-  if (volumeInput) volumeInput.value = String(Math.round(soundSettings.volume * 100));
 }
 
 // ------------------------
@@ -819,14 +813,6 @@ beepEnabledInput?.addEventListener("change", () => {
 voiceEnabledInput?.addEventListener("change", () => {
   soundSettings.voiceEnabled = Boolean(voiceEnabledInput.checked);
   saveSoundSettings();
-});
-
-volumeInput?.addEventListener("input", () => {
-  const n = Number.parseInt(volumeInput.value, 10);
-  if (!Number.isNaN(n)) {
-    soundSettings.volume = Math.max(0, Math.min(1, n / 100));
-    saveSoundSettings();
-  }
 });
 
 clearHistoryBtn?.addEventListener("click", () => {
