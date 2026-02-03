@@ -77,6 +77,7 @@ function createExerciseRow(container, { name = "", seconds = "" } = {}) {
   nameInput.placeholder = "e.g. Plank";
   nameInput.value = name;
   nameInput.setAttribute("aria-label", "Exercise name");
+  nameInput.addEventListener("input", () => updateTotalDurationLabel?.());
 
   const secondsInput = document.createElement("input");
   secondsInput.type = "number";
@@ -85,6 +86,7 @@ function createExerciseRow(container, { name = "", seconds = "" } = {}) {
   secondsInput.placeholder = "—";
   secondsInput.value = String(seconds ?? "");
   secondsInput.setAttribute("aria-label", "Seconds override (optional)");
+  secondsInput.addEventListener("input", () => updateTotalDurationLabel?.());
 
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
@@ -92,6 +94,7 @@ function createExerciseRow(container, { name = "", seconds = "" } = {}) {
   removeBtn.textContent = "×";
   removeBtn.title = "Remove";
   removeBtn.addEventListener("click", () => row.remove());
+  removeBtn.addEventListener("click", () => updateTotalDurationLabel?.());
 
   row.appendChild(nameInput);
   row.appendChild(secondsInput);
@@ -179,6 +182,13 @@ function buildSteps(workout) {
   return steps;
 }
 
+function getTotalDurationSecondsForWorkout(w) {
+  const tempSteps = buildSteps(w);
+  let total = 0;
+  for (const step of tempSteps) total += step.durationSeconds;
+  return total;
+}
+
 // ------------------------
 // DOM
 // ------------------------
@@ -221,6 +231,8 @@ const countdownLabel = document.getElementById("countdownLabel");
 const currentLabel = document.getElementById("currentLabel");
 const nextLabel = document.getElementById("nextLabel");
 const progressLabel = document.getElementById("progressLabel");
+const totalDurationLabel = document.getElementById("totalDurationLabel");
+const overallProgressFill = document.getElementById("overallProgressFill");
 
 // Run controls
 const runStartBtn = document.getElementById("runStartBtn");
@@ -515,6 +527,13 @@ function render() {
   if (steps.length === 0) return;
 
   const step = steps[currentStepIndex];
+  const totalSeconds = steps.reduce((acc, s) => acc + s.durationSeconds, 0);
+  const remainingSeconds =
+    steps.slice(currentStepIndex + 1).reduce((acc, s) => acc + s.durationSeconds, 0) +
+    secondsRemaining;
+  const completedSeconds = Math.max(0, totalSeconds - remainingSeconds);
+  const overallPct = totalSeconds > 0 ? Math.min(100, (completedSeconds / totalSeconds) * 100) : 0;
+  if (overallProgressFill) overallProgressFill.style.width = `${overallPct}%`;
 
   if (isFinished) {
     runView.classList.remove("runView-exercise", "runView-rest", "runView-half", "runView-final");
@@ -701,3 +720,48 @@ function init() {
 }
 
 init();
+
+// ------------------------
+// Setup summary (total duration)
+// ------------------------
+function updateTotalDurationLabel() {
+  if (!totalDurationLabel) return;
+  const w = getWorkoutFromInputs();
+  if (w.circuitA.exercises.length === 0) {
+    totalDurationLabel.textContent = "—";
+    return;
+  }
+  if (w.circuitB.enabled && w.circuitB.exercises.length === 0) {
+    totalDurationLabel.textContent = "—";
+    return;
+  }
+
+  const total = getTotalDurationSecondsForWorkout(w);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  totalDurationLabel.textContent = `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+}
+
+[
+  workSecondsInput,
+  restBetweenExercisesInput,
+  restBetweenCircuitsInput,
+  circuitRepeatsInput,
+  transitionRestSecondsInput,
+  circuitBRepeatsInput,
+  presetSelect,
+  presetNameInput,
+].forEach((el) => el && el.addEventListener("input", updateTotalDurationLabel));
+
+["click", "change"].forEach((evt) => {
+  addExerciseABtn.addEventListener(evt, updateTotalDurationLabel);
+  addExerciseBBtn.addEventListener(evt, updateTotalDurationLabel);
+  toggleCircuitBBtn.addEventListener(evt, updateTotalDurationLabel);
+  loadPresetBtn.addEventListener(evt, updateTotalDurationLabel);
+  deletePresetBtn.addEventListener(evt, updateTotalDurationLabel);
+  savePresetBtn.addEventListener(evt, updateTotalDurationLabel);
+  loadExampleBtn.addEventListener(evt, updateTotalDurationLabel);
+});
+
+// Initial update
+updateTotalDurationLabel();

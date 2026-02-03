@@ -96,6 +96,21 @@ button.secondary.active {
 
 .hint { margin-top: 10px; color: #a9a9a9; font-size: 13px; line-height: 1.35; }
 
+.summaryRow {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed #2a2f3a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #c7c7c7;
+  background: #0f1115;
+}
+
+.summaryLabel { font-size: 13px; color: #a9a9a9; }
+.summaryValue { font-size: 16px; font-weight: 700; }
+
 /* --------------------------
    Exercise list UX (fixed)
    - Name is wide
@@ -198,6 +213,23 @@ button.secondary.active {
 }
 
 .runInfo { padding: 8px 4px 2px; }
+
+.progressBar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #0f1115;
+  border: 1px solid #2a2f3a;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progressBarFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #2a5a9a, #1d5b3d);
+  transition: width 0.2s ease;
+}
 
 .labelRow {
   display: grid;
