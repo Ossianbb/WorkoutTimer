@@ -42,6 +42,25 @@
           </p>
         </section>
 
+        <!-- Sound controls -->
+        <section class="subcard">
+          <h3>Sound</h3>
+          <div class="row">
+            <label>
+              <input id="beepEnabled" type="checkbox" checked />
+              Beeps
+            </label>
+            <label>
+              <input id="voiceEnabled" type="checkbox" checked />
+              Voice cues
+            </label>
+            <label class="grow">
+              Volume
+              <input id="volumeInput" type="range" min="0" max="100" value="70" />
+            </label>
+          </div>
+        </section>
+
         <!-- Global settings (clear section at top) -->
         <section class="subcard">
           <h3>Global timings</h3>
@@ -144,12 +163,24 @@
         <p class="hint">
           Tip: Use Live Server so the page auto-refreshes while you edit.
         </p>
+
+        <section class="subcard">
+          <h3>Recent sessions</h3>
+          <div id="historyList" class="historyList"></div>
+          <div class="row">
+            <button id="clearHistoryBtn" class="secondary" type="button">Clear history</button>
+          </div>
+        </section>
       </section>
 
       <!-- Run screen -->
       <section id="runView" class="card hidden runCard">
         <div class="runHeader">
           <div class="time bigTime" id="timeLabel">00:45</div>
+
+          <div class="progressBar stepProgress">
+            <div class="progressBarFill" id="stepProgressFill"></div>
+          </div>
 
           <div class="runSubHeader">
             <div class="phaseChip" id="phaseLabel">Exercise</div>

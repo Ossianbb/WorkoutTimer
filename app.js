@@ -18,6 +18,13 @@ function formatTime(totalSeconds) {
 // Sound + Speech
 // ------------------------
 let audioCtx = null;
+const SOUND_SETTINGS_KEY = "workoutTimerSoundSettingsV1";
+
+const soundSettings = {
+  beepEnabled: true,
+  voiceEnabled: true,
+  volume: 0.7,
+};
 
 function ensureAudio() {
   if (audioCtx) return;
@@ -27,12 +34,13 @@ function ensureAudio() {
 }
 
 function beep(freq, ms, type = "sine", gainValue = 0.03) {
+  if (!soundSettings.beepEnabled) return;
   if (!audioCtx) return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type;
   osc.frequency.value = freq;
-  gain.gain.value = gainValue;
+  gain.gain.value = gainValue * soundSettings.volume;
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   const now = audioCtx.currentTime;
@@ -52,12 +60,13 @@ function cueFinalTick() {
 
 function speak(text) {
   try {
+    if (!soundSettings.voiceEnabled) return;
     if (!("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 1.0;
     u.pitch = 1.0;
-    u.volume = 1.0;
+    u.volume = soundSettings.volume;
     window.speechSynthesis.speak(u);
   } catch {
     // ignore
@@ -233,6 +242,14 @@ const nextLabel = document.getElementById("nextLabel");
 const progressLabel = document.getElementById("progressLabel");
 const totalDurationLabel = document.getElementById("totalDurationLabel");
 const overallProgressFill = document.getElementById("overallProgressFill");
+const stepProgressFill = document.getElementById("stepProgressFill");
+const historyList = document.getElementById("historyList");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+
+// Sound controls
+const beepEnabledInput = document.getElementById("beepEnabled");
+const voiceEnabledInput = document.getElementById("voiceEnabled");
+const volumeInput = document.getElementById("volumeInput");
 
 // Run controls
 const runStartBtn = document.getElementById("runStartBtn");
@@ -253,16 +270,20 @@ let intervalId = null;
 let isRunning = false;
 let hasStarted = false;
 let isFinished = false;
+let stepEndTimeMs = null;
+let lastDisplayedSeconds = null;
 
 // Track one-off cues per step
 let lastHalfCueStepIndex = null;
 let lastFinalCueKey = null; // `${stepIndex}:${secondsRemaining}`
 let lastSpokenRestStepIndex = null;
+let lastSpokenExerciseStepIndex = null;
 
 // ------------------------
 // Presets (LocalStorage)
 // ------------------------
 const PRESETS_KEY = "workoutTimerPresetsV1";
+const HISTORY_KEY = "workoutTimerHistoryV1";
 
 function loadPresets() {
   try {
@@ -348,6 +369,31 @@ function updateRunControls() {
   resumeBtn.classList.toggle("hidden", !canResume);
 }
 
+function loadSoundSettings() {
+  try {
+    const raw = localStorage.getItem(SOUND_SETTINGS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.beepEnabled === "boolean") soundSettings.beepEnabled = parsed.beepEnabled;
+    if (typeof parsed?.voiceEnabled === "boolean") soundSettings.voiceEnabled = parsed.voiceEnabled;
+    if (typeof parsed?.volume === "number") {
+      soundSettings.volume = Math.max(0, Math.min(1, parsed.volume));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function saveSoundSettings() {
+  localStorage.setItem(SOUND_SETTINGS_KEY, JSON.stringify(soundSettings));
+}
+
+function applySoundSettingsToUI() {
+  if (beepEnabledInput) beepEnabledInput.checked = soundSettings.beepEnabled;
+  if (voiceEnabledInput) voiceEnabledInput.checked = soundSettings.voiceEnabled;
+  if (volumeInput) volumeInput.value = String(Math.round(soundSettings.volume * 100));
+}
+
 // ------------------------
 // Build workout from UI
 // ------------------------
@@ -409,6 +455,72 @@ function getProgressForStep(stepIndex) {
   return { circuitId, round, exercise, exercisesPerRound, totalRounds };
 }
 
+function speakStepIfNeeded(step) {
+  if (!step) return;
+  const isRest =
+    step.type === "rest" || step.type === "circuit_rest" || step.type === "transition_rest";
+  const isExercise = step.type === "exercise";
+
+  if (isRest && lastSpokenRestStepIndex !== currentStepIndex) {
+    lastSpokenRestStepIndex = currentStepIndex;
+    speak("Rest");
+  }
+  if (isExercise && lastSpokenExerciseStepIndex !== currentStepIndex) {
+    lastSpokenExerciseStepIndex = currentStepIndex;
+    speak("Go");
+  }
+}
+
+function renderStepProgress(step, remaining) {
+  if (!stepProgressFill || !step) return;
+  const total = step.durationSeconds || 1;
+  const done = Math.min(total, Math.max(0, total - remaining));
+  const pct = Math.min(100, (done / total) * 100);
+  stepProgressFill.style.width = `${pct}%`;
+}
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(list) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+}
+
+function addHistoryEntry(entry) {
+  const list = loadHistory();
+  list.unshift(entry);
+  const capped = list.slice(0, 20);
+  saveHistory(capped);
+  renderHistory();
+}
+
+function renderHistory() {
+  if (!historyList) return;
+  const list = loadHistory();
+  historyList.innerHTML = "";
+  if (list.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "historyItem";
+    empty.textContent = "No sessions yet.";
+    historyList.appendChild(empty);
+    return;
+  }
+  for (const item of list) {
+    const row = document.createElement("div");
+    row.className = "historyItem";
+    row.textContent = `${item.date} • ${item.duration}`;
+    historyList.appendChild(row);
+  }
+}
+
 // ------------------------
 // Timer engine
 // ------------------------
@@ -421,17 +533,15 @@ function stopTimer() {
   updateRunControls();
 }
 
-function startTimer() {
-  if (isRunning || steps.length === 0 || isFinished) return;
+function tickTimer() {
+  if (!isRunning || stepEndTimeMs == null) return;
+  const now = performance.now();
+  const remainingMs = stepEndTimeMs - now;
+  const newSecondsRemaining = Math.max(0, Math.ceil(remainingMs / 1000));
 
-  ensureAudio();
-
-  isRunning = true;
-  hasStarted = true;
-  updateRunControls();
-
-  intervalId = setInterval(() => {
-    secondsRemaining -= 1;
+  if (lastDisplayedSeconds !== newSecondsRemaining) {
+    secondsRemaining = newSecondsRemaining;
+    lastDisplayedSeconds = newSecondsRemaining;
 
     const step = steps[currentStepIndex];
 
@@ -458,26 +568,35 @@ function startTimer() {
 
     if (secondsRemaining <= 0) {
       goToNextStep(true);
-    } else {
-      render();
+      return;
     }
-  }, 1000);
+    render();
+  }
+}
+
+function startTimer() {
+  if (isRunning || steps.length === 0 || isFinished) return;
+
+  ensureAudio();
+  if (audioCtx?.state === "suspended") audioCtx.resume();
+
+  isRunning = true;
+  hasStarted = true;
+  updateRunControls();
+  const step = steps[currentStepIndex];
+  speakStepIfNeeded(step);
+
+  stepEndTimeMs = performance.now() + secondsRemaining * 1000;
+  lastDisplayedSeconds = secondsRemaining;
+  intervalId = setInterval(tickTimer, 200);
 }
 
 function setStep(index, previousStep) {
   currentStepIndex = index;
   const step = steps[currentStepIndex];
   secondsRemaining = step.durationSeconds;
-
-  // Speak “Rest” when a rest step begins (right as it switches)
-  const isNowRest =
-    step.type === "rest" || step.type === "circuit_rest" || step.type === "transition_rest";
-  const wasExercise = previousStep?.type === "exercise";
-
-  if (isNowRest && wasExercise && lastSpokenRestStepIndex !== currentStepIndex) {
-    lastSpokenRestStepIndex = currentStepIndex;
-    speak("Rest");
-  }
+  stepEndTimeMs = null;
+  lastDisplayedSeconds = null;
 
   render();
 }
@@ -492,6 +611,14 @@ function goToNextStep(autoContinue) {
     secondsRemaining = 0;
     render();
     updateRunControls();
+    if (workout) {
+      const total = getTotalDurationSecondsForWorkout(workout);
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      const duration = `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+      const date = new Date().toLocaleString();
+      addHistoryEntry({ date, duration });
+    }
     return;
   }
 
@@ -509,13 +636,15 @@ function skipStep() {
 
 function resetWorkout() {
   stopTimer();
+  hasStarted = false;
+  isRunning = false;
   if (steps.length > 0) {
     lastHalfCueStepIndex = null;
     lastFinalCueKey = null;
     lastSpokenRestStepIndex = null;
+    lastSpokenExerciseStepIndex = null;
     setStep(0, null);
   }
-  hasStarted = false;
   isFinished = false;
   updateRunControls();
 }
@@ -534,6 +663,7 @@ function render() {
   const completedSeconds = Math.max(0, totalSeconds - remainingSeconds);
   const overallPct = totalSeconds > 0 ? Math.min(100, (completedSeconds / totalSeconds) * 100) : 0;
   if (overallProgressFill) overallProgressFill.style.width = `${overallPct}%`;
+  renderStepProgress(step, secondsRemaining);
 
   if (isFinished) {
     runView.classList.remove("runView-exercise", "runView-rest", "runView-half", "runView-final");
@@ -641,6 +771,24 @@ backToSetupBtn.addEventListener("click", () => {
   showSetup();
 });
 
+document.addEventListener("keydown", (event) => {
+  const tag = event.target?.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if (runView.classList.contains("hidden")) return;
+
+  if (event.code === "Space") {
+    event.preventDefault();
+    if (isRunning) stopTimer();
+    else startTimer();
+  } else if (event.key.toLowerCase() === "n") {
+    event.preventDefault();
+    skipStep();
+  } else if (event.key.toLowerCase() === "r") {
+    event.preventDefault();
+    resetWorkout();
+  }
+});
+
 loadExampleBtn.addEventListener("click", () => {
   workSecondsInput.value = 45;
   restBetweenExercisesInput.value = 15;
@@ -661,6 +809,29 @@ loadExampleBtn.addEventListener("click", () => {
   exerciseListB.innerHTML = "";
   createExerciseRow(exerciseListB, { name: "Push-ups", seconds: "" });
   createExerciseRow(exerciseListB, { name: "Squats", seconds: "" });
+});
+
+beepEnabledInput?.addEventListener("change", () => {
+  soundSettings.beepEnabled = Boolean(beepEnabledInput.checked);
+  saveSoundSettings();
+});
+
+voiceEnabledInput?.addEventListener("change", () => {
+  soundSettings.voiceEnabled = Boolean(voiceEnabledInput.checked);
+  saveSoundSettings();
+});
+
+volumeInput?.addEventListener("input", () => {
+  const n = Number.parseInt(volumeInput.value, 10);
+  if (!Number.isNaN(n)) {
+    soundSettings.volume = Math.max(0, Math.min(1, n / 100));
+    saveSoundSettings();
+  }
+});
+
+clearHistoryBtn?.addEventListener("click", () => {
+  saveHistory([]);
+  renderHistory();
 });
 
 savePresetBtn.addEventListener("click", () => {
@@ -716,6 +887,9 @@ function init() {
 
   setCircuitBEnabled(false);
   refreshPresetSelect();
+  loadSoundSettings();
+  applySoundSettingsToUI();
+  renderHistory();
   showSetup();
 }
 

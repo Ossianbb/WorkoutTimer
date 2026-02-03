@@ -95,6 +95,29 @@ button.secondary.active {
 }
 
 .hint { margin-top: 10px; color: #a9a9a9; font-size: 13px; line-height: 1.35; }
+.row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.row label input[type="checkbox"] { width: auto; margin: 0; }
+.row label input[type="range"] { margin-top: 8px; }
+
+.historyList {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.historyItem {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #2a2f3a;
+  background: #0f1115;
+  font-size: 13px;
+  color: #c7c7c7;
+}
 
 .summaryRow {
   margin-top: 12px;
@@ -230,6 +253,8 @@ button.secondary.active {
   background: linear-gradient(90deg, #2a5a9a, #1d5b3d);
   transition: width 0.2s ease;
 }
+
+.stepProgress { margin-bottom: 2px; }
 
 .labelRow {
   display: grid;
