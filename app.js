@@ -32,6 +32,16 @@ function ensureAudio() {
   audioCtx = new AudioContext();
 }
 
+let hasAudioUnlocked = false;
+function unlockAudioOnce() {
+  if (hasAudioUnlocked) return;
+  ensureAudio();
+  if (audioCtx && audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+  hasAudioUnlocked = true;
+}
+
 function beep(freq, ms, type = "sine", gainValue = 0.03) {
   if (!soundSettings.beepEnabled) return;
   if (!audioCtx) return;
@@ -128,6 +138,24 @@ function getExercisesFromList(container) {
   return out;
 }
 
+function getTimedExercisesFromList(container) {
+  const rows = Array.from(container.querySelectorAll(".exerciseRow"));
+  const out = [];
+  for (const row of rows) {
+    const name = row.querySelector(".exerciseName")?.value?.trim() ?? "";
+    const secondsRaw = row.querySelector(".exerciseSeconds")?.value ?? "";
+    if (!name) continue;
+
+    const n = Number.parseInt(secondsRaw, 10);
+    if (Number.isNaN(n) || n <= 0) {
+      out.push({ name, secondsOverride: null });
+    } else {
+      out.push({ name, secondsOverride: n });
+    }
+  }
+  return out;
+}
+
 // ------------------------
 // Build steps
 // ------------------------
@@ -173,6 +201,25 @@ function buildStepsForCircuit(circuitId, workout, exercises, repeats) {
 
 function buildSteps(workout) {
   const steps = [];
+  if (workout.warmup.enabled) {
+    for (const ex of workout.warmup.exercises) {
+      const duration = ex.secondsOverride != null ? ex.secondsOverride : workout.workSeconds;
+      steps.push({
+        type: "warmup",
+        label: ex.name,
+        durationSeconds: duration,
+        circuitId: "W",
+      });
+    }
+    if (workout.warmup.transitionRestSeconds > 0) {
+      steps.push({
+        type: "warmup_rest",
+        label: "Warmup rest",
+        durationSeconds: workout.warmup.transitionRestSeconds,
+        circuitId: "W",
+      });
+    }
+  }
   steps.push(...buildStepsForCircuit("A", workout, workout.circuitA.exercises, workout.circuitA.repeats));
 
   if (workout.circuitB.enabled) {
@@ -185,6 +232,25 @@ function buildSteps(workout) {
       });
     }
     steps.push(...buildStepsForCircuit("B", workout, workout.circuitB.exercises, workout.circuitB.repeats));
+  }
+  if (workout.cooldown.enabled) {
+    if (workout.cooldown.transitionRestSeconds > 0) {
+      steps.push({
+        type: "cooldown_rest",
+        label: "Cooldown rest",
+        durationSeconds: workout.cooldown.transitionRestSeconds,
+        circuitId: "C",
+      });
+    }
+    for (const ex of workout.cooldown.exercises) {
+      const duration = ex.secondsOverride != null ? ex.secondsOverride : workout.workSeconds;
+      steps.push({
+        type: "cooldown",
+        label: ex.name,
+        durationSeconds: duration,
+        circuitId: "C",
+      });
+    }
   }
 
   return steps;
@@ -227,6 +293,19 @@ const circuitBRepeatsInput = document.getElementById("circuitBRepeats");
 const transitionRestSecondsInput = document.getElementById("transitionRestSeconds");
 const exerciseListB = document.getElementById("exerciseListB");
 const addExerciseBBtn = document.getElementById("addExerciseBBtn");
+
+// Warmup/Cooldown
+const warmupToggleBtn = document.getElementById("warmupToggleBtn");
+const warmupSection = document.getElementById("warmupSection");
+const warmupList = document.getElementById("warmupList");
+const addWarmupBtn = document.getElementById("addWarmupBtn");
+const warmupTransitionRestSecondsInput = document.getElementById("warmupTransitionRestSeconds");
+
+const cooldownToggleBtn = document.getElementById("cooldownToggleBtn");
+const cooldownSection = document.getElementById("cooldownSection");
+const cooldownList = document.getElementById("cooldownList");
+const addCooldownBtn = document.getElementById("addCooldownBtn");
+const cooldownTransitionRestSecondsInput = document.getElementById("cooldownTransitionRestSeconds");
 
 // Setup buttons
 const startBtn = document.getElementById("startBtn");
@@ -323,10 +402,28 @@ function setCircuitBEnabled(enabled) {
   circuitBSection.classList.toggle("hidden", !enabled);
 }
 
+function setWarmupEnabled(enabled) {
+  if (!warmupSection) return;
+  warmupToggleBtn.setAttribute("aria-pressed", String(enabled));
+  warmupToggleBtn.classList.toggle("active", enabled);
+  warmupToggleBtn.textContent = enabled ? "Remove Warmup" : "+ Add Warmup";
+  warmupSection.classList.toggle("hidden", !enabled);
+}
+
+function setCooldownEnabled(enabled) {
+  if (!cooldownSection) return;
+  cooldownToggleBtn.setAttribute("aria-pressed", String(enabled));
+  cooldownToggleBtn.classList.toggle("active", enabled);
+  cooldownToggleBtn.textContent = enabled ? "Remove Cooldown" : "+ Add Cooldown";
+  cooldownSection.classList.toggle("hidden", !enabled);
+}
+
 function applyWorkoutToUI(w) {
   workSecondsInput.value = w.workSeconds ?? 45;
   restBetweenExercisesInput.value = w.restBetweenExercisesSeconds ?? 15;
   restBetweenCircuitsInput.value = w.restBetweenCircuitsSeconds ?? 60;
+  warmupTransitionRestSecondsInput.value = w.warmup?.transitionRestSeconds ?? 30;
+  cooldownTransitionRestSecondsInput.value = w.cooldown?.transitionRestSeconds ?? 30;
 
   circuitRepeatsInput.value = w.circuitA?.repeats ?? 2;
 
@@ -335,6 +432,13 @@ function applyWorkoutToUI(w) {
     createExerciseRow(exerciseListA, { name: ex.name, seconds: ex.secondsOverride ?? "" });
   }
   if (exerciseListA.querySelectorAll(".exerciseRow").length === 0) createExerciseRow(exerciseListA);
+
+  setWarmupEnabled(Boolean(w.warmup?.enabled));
+  warmupList.innerHTML = "";
+  for (const ex of (w.warmup?.exercises ?? [])) {
+    createExerciseRow(warmupList, { name: ex.name, seconds: ex.secondsOverride ?? "" });
+  }
+  if (warmupList.querySelectorAll(".exerciseRow").length === 0) createExerciseRow(warmupList);
 
   setCircuitBEnabled(Boolean(w.circuitB?.enabled));
   circuitBRepeatsInput.value = w.circuitB?.repeats ?? 2;
@@ -345,6 +449,13 @@ function applyWorkoutToUI(w) {
     createExerciseRow(exerciseListB, { name: ex.name, seconds: ex.secondsOverride ?? "" });
   }
   if (exerciseListB.querySelectorAll(".exerciseRow").length === 0) createExerciseRow(exerciseListB);
+
+  setCooldownEnabled(Boolean(w.cooldown?.enabled));
+  cooldownList.innerHTML = "";
+  for (const ex of (w.cooldown?.exercises ?? [])) {
+    createExerciseRow(cooldownList, { name: ex.name, seconds: ex.secondsOverride ?? "" });
+  }
+  if (cooldownList.querySelectorAll(".exerciseRow").length === 0) createExerciseRow(cooldownList);
 }
 
 // ------------------------
@@ -395,6 +506,10 @@ function getWorkoutFromInputs() {
   const circuitAExercises = getExercisesFromList(exerciseListA);
   const circuitBEnabled = toggleCircuitBBtn.getAttribute("aria-pressed") === "true";
   const circuitBExercises = getExercisesFromList(exerciseListB);
+  const warmupEnabled = warmupToggleBtn.getAttribute("aria-pressed") === "true";
+  const cooldownEnabled = cooldownToggleBtn.getAttribute("aria-pressed") === "true";
+  const warmupExercises = getTimedExercisesFromList(warmupList);
+  const cooldownExercises = getTimedExercisesFromList(cooldownList);
 
   return {
     workSeconds: clampInt(workSecondsInput.value, 1, 45),
@@ -412,6 +527,18 @@ function getWorkoutFromInputs() {
       repeats: clampInt(circuitBRepeatsInput.value, 1, 2),
       exercises: circuitBExercises,
     },
+
+    warmup: {
+      enabled: warmupEnabled,
+      exercises: warmupExercises,
+      transitionRestSeconds: clampInt(warmupTransitionRestSecondsInput?.value ?? 30, 0, 30),
+    },
+
+    cooldown: {
+      enabled: cooldownEnabled,
+      exercises: cooldownExercises,
+      transitionRestSeconds: clampInt(cooldownTransitionRestSecondsInput?.value ?? 30, 0, 30),
+    },
   };
 }
 
@@ -420,7 +547,9 @@ function getWorkoutFromInputs() {
 // ------------------------
 function getNextExerciseLabel(fromIndexExclusive) {
   for (let i = fromIndexExclusive + 1; i < steps.length; i++) {
-    if (steps[i].type === "exercise") return steps[i].label;
+    if (steps[i].type === "exercise" || steps[i].type === "warmup" || steps[i].type === "cooldown") {
+      return steps[i].label;
+    }
   }
   return null;
 }
@@ -430,6 +559,7 @@ function getProgressForStep(stepIndex) {
   if (!steps[stepIndex]) return null;
 
   const circuitId = steps[stepIndex].circuitId || "A";
+  if (circuitId === "W" || circuitId === "C") return null;
   const circuit = circuitId === "B" ? workout.circuitB : workout.circuitA;
   const exercisesPerRound = circuit.exercises.length;
   const totalRounds = circuit.repeats;
@@ -452,8 +582,12 @@ function getProgressForStep(stepIndex) {
 function speakStepIfNeeded(step) {
   if (!step) return;
   const isRest =
-    step.type === "rest" || step.type === "circuit_rest" || step.type === "transition_rest";
-  const isExercise = step.type === "exercise";
+    step.type === "rest" ||
+    step.type === "circuit_rest" ||
+    step.type === "transition_rest" ||
+    step.type === "warmup_rest" ||
+    step.type === "cooldown_rest";
+  const isExercise = step.type === "exercise" || step.type === "warmup" || step.type === "cooldown";
 
   if (isRest && lastSpokenRestStepIndex !== currentStepIndex) {
     lastSpokenRestStepIndex = currentStepIndex;
@@ -543,7 +677,7 @@ function tickTimer() {
     // - Halfway cue (beep + colour) for EXERCISE only, once per step
     // - Final countdown 3..2..1 for ANY step (exercise or rest), each second once
     if (step) {
-      if (step.type === "exercise") {
+      if (step.type === "exercise" || step.type === "warmup" || step.type === "cooldown") {
         const halfPoint = Math.floor(step.durationSeconds / 2);
         if (secondsRemaining === halfPoint && lastHalfCueStepIndex !== currentStepIndex) {
           lastHalfCueStepIndex = currentStepIndex;
@@ -571,6 +705,7 @@ function tickTimer() {
 function startTimer() {
   if (isRunning || steps.length === 0 || isFinished) return;
 
+  unlockAudioOnce();
   ensureAudio();
   if (audioCtx?.state === "suspended") audioCtx.resume();
 
@@ -670,12 +805,19 @@ function render() {
     return;
   }
 
-  const isExercise = step.type === "exercise";
+  const isExercise = step.type === "exercise" || step.type === "warmup" || step.type === "cooldown";
   const isRest =
-    step.type === "rest" || step.type === "circuit_rest" || step.type === "transition_rest";
+    step.type === "rest" ||
+    step.type === "circuit_rest" ||
+    step.type === "transition_rest" ||
+    step.type === "warmup_rest" ||
+    step.type === "cooldown_rest";
+  const isWarmup = step.type === "warmup";
+  const isCooldown = step.type === "cooldown";
+  const isExerciseLike = isExercise;
 
   // Labels
-  phaseLabel.textContent = isExercise ? "Exercise" : "Rest";
+  phaseLabel.textContent = isWarmup ? "Warmup" : isCooldown ? "Cooldown" : isExercise ? "Exercise" : "Rest";
 
   // Countdown display for last 3 seconds
   countdownLabel.textContent =
@@ -685,7 +827,7 @@ function render() {
   timeLabel.textContent = formatTime(secondsRemaining);
 
   // Current label (bigger already via CSS)
-  currentLabel.textContent = isExercise
+  currentLabel.textContent = isExerciseLike
     ? step.label
     : step.type === "transition_rest"
       ? "Transition rest"
@@ -704,11 +846,11 @@ function render() {
   // - Exercise vs Rest
   // - Halfway state on exercise (<= half remaining, >3s)
   // - Final state for any step (<=3s)
-  runView.classList.toggle("runView-exercise", isExercise);
+  runView.classList.toggle("runView-exercise", isExerciseLike);
   runView.classList.toggle("runView-rest", isRest);
 
-  const halfPoint = isExercise ? Math.floor(step.durationSeconds / 2) : null;
-  const isHalf = isExercise && secondsRemaining <= halfPoint && secondsRemaining > 3;
+  const halfPoint = isExerciseLike ? Math.floor(step.durationSeconds / 2) : null;
+  const isHalf = isExerciseLike && secondsRemaining <= halfPoint && secondsRemaining > 3;
   const isFinal = secondsRemaining <= 3;
 
   runView.classList.toggle("runView-half", isHalf && !isFinal);
@@ -722,10 +864,24 @@ function render() {
 // ------------------------
 addExerciseABtn.addEventListener("click", () => createExerciseRow(exerciseListA));
 addExerciseBBtn.addEventListener("click", () => createExerciseRow(exerciseListB));
+addWarmupBtn?.addEventListener("click", () => createExerciseRow(warmupList));
+addCooldownBtn?.addEventListener("click", () => createExerciseRow(cooldownList));
 
 toggleCircuitBBtn.addEventListener("click", () => {
   const isOn = toggleCircuitBBtn.getAttribute("aria-pressed") === "true";
   setCircuitBEnabled(!isOn);
+});
+
+warmupToggleBtn?.addEventListener("click", () => {
+  const isOn = warmupToggleBtn.getAttribute("aria-pressed") === "true";
+  setWarmupEnabled(!isOn);
+  updateTotalDurationLabel();
+});
+
+cooldownToggleBtn?.addEventListener("click", () => {
+  const isOn = cooldownToggleBtn.getAttribute("aria-pressed") === "true";
+  setCooldownEnabled(!isOn);
+  updateTotalDurationLabel();
 });
 
 startBtn.addEventListener("click", () => {
@@ -734,6 +890,32 @@ startBtn.addEventListener("click", () => {
   if (nextWorkout.circuitA.exercises.length === 0) {
     alert("Please add at least one Circuit A exercise.");
     return;
+  }
+  if (nextWorkout.warmup.enabled) {
+    if (nextWorkout.warmup.exercises.length === 0) {
+      alert("Warmup is enabled, but it has no exercises.");
+      return;
+    }
+    const hasMissing = nextWorkout.warmup.exercises.some(
+      (ex) => !ex.name || ex.secondsOverride == null
+    );
+    if (hasMissing) {
+      alert("Warmup exercises need a name and seconds.");
+      return;
+    }
+  }
+  if (nextWorkout.cooldown.enabled) {
+    if (nextWorkout.cooldown.exercises.length === 0) {
+      alert("Cooldown is enabled, but it has no exercises.");
+      return;
+    }
+    const hasMissing = nextWorkout.cooldown.exercises.some(
+      (ex) => !ex.name || ex.secondsOverride == null
+    );
+    if (hasMissing) {
+      alert("Cooldown exercises need a name and seconds.");
+      return;
+    }
   }
   if (nextWorkout.circuitB.enabled && nextWorkout.circuitB.exercises.length === 0) {
     alert("Circuit B is enabled, but it has no exercises.");
@@ -783,6 +965,16 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+["pointerdown", "touchstart"].forEach((evt) => {
+  document.addEventListener(
+    evt,
+    () => {
+      unlockAudioOnce();
+    },
+    { once: true, passive: true }
+  );
+});
+
 loadExampleBtn.addEventListener("click", () => {
   workSecondsInput.value = 45;
   restBetweenExercisesInput.value = 15;
@@ -803,6 +995,13 @@ loadExampleBtn.addEventListener("click", () => {
   exerciseListB.innerHTML = "";
   createExerciseRow(exerciseListB, { name: "Push-ups", seconds: "" });
   createExerciseRow(exerciseListB, { name: "Squats", seconds: "" });
+
+  setWarmupEnabled(false);
+  setCooldownEnabled(false);
+  warmupList.innerHTML = "";
+  cooldownList.innerHTML = "";
+  createExerciseRow(warmupList, { name: "Jumping jacks", seconds: "30" });
+  createExerciseRow(cooldownList, { name: "Stretch", seconds: "45" });
 });
 
 beepEnabledInput?.addEventListener("change", () => {
@@ -871,7 +1070,16 @@ function init() {
     createExerciseRow(exerciseListB, { name: "Squats", seconds: "" });
   }
 
+  if (warmupList.querySelectorAll(".exerciseRow").length === 0) {
+    createExerciseRow(warmupList, { name: "Jumping jacks", seconds: "30" });
+  }
+  if (cooldownList.querySelectorAll(".exerciseRow").length === 0) {
+    createExerciseRow(cooldownList, { name: "Stretch", seconds: "45" });
+  }
+
   setCircuitBEnabled(false);
+  setWarmupEnabled(false);
+  setCooldownEnabled(false);
   refreshPresetSelect();
   loadSoundSettings();
   applySoundSettingsToUI();
@@ -895,6 +1103,22 @@ function updateTotalDurationLabel() {
     totalDurationLabel.textContent = "—";
     return;
   }
+  if (w.warmup.enabled && w.warmup.exercises.length === 0) {
+    totalDurationLabel.textContent = "—";
+    return;
+  }
+  if (w.cooldown.enabled && w.cooldown.exercises.length === 0) {
+    totalDurationLabel.textContent = "—";
+    return;
+  }
+  if (w.warmup.enabled && w.warmup.exercises.some((ex) => ex.secondsOverride == null)) {
+    totalDurationLabel.textContent = "—";
+    return;
+  }
+  if (w.cooldown.enabled && w.cooldown.exercises.some((ex) => ex.secondsOverride == null)) {
+    totalDurationLabel.textContent = "—";
+    return;
+  }
 
   const total = getTotalDurationSecondsForWorkout(w);
   const minutes = Math.floor(total / 60);
@@ -909,6 +1133,8 @@ function updateTotalDurationLabel() {
   circuitRepeatsInput,
   transitionRestSecondsInput,
   circuitBRepeatsInput,
+  warmupTransitionRestSecondsInput,
+  cooldownTransitionRestSecondsInput,
   presetSelect,
   presetNameInput,
 ].forEach((el) => el && el.addEventListener("input", updateTotalDurationLabel));
@@ -916,7 +1142,11 @@ function updateTotalDurationLabel() {
 ["click", "change"].forEach((evt) => {
   addExerciseABtn.addEventListener(evt, updateTotalDurationLabel);
   addExerciseBBtn.addEventListener(evt, updateTotalDurationLabel);
+  addWarmupBtn?.addEventListener(evt, updateTotalDurationLabel);
+  addCooldownBtn?.addEventListener(evt, updateTotalDurationLabel);
   toggleCircuitBBtn.addEventListener(evt, updateTotalDurationLabel);
+  warmupToggleBtn?.addEventListener(evt, updateTotalDurationLabel);
+  cooldownToggleBtn?.addEventListener(evt, updateTotalDurationLabel);
   loadPresetBtn.addEventListener(evt, updateTotalDurationLabel);
   deletePresetBtn.addEventListener(evt, updateTotalDurationLabel);
   savePresetBtn.addEventListener(evt, updateTotalDurationLabel);

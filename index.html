@@ -55,6 +55,9 @@
               Voice cues
             </label>
           </div>
+          <p class="hint">
+            Tip: Some phones block beeps unless the device is not on silent and you tap the page first.
+          </p>
         </section>
 
         <!-- Global settings (clear section at top) -->
@@ -112,6 +115,42 @@
           </div>
         </section>
 
+        <!-- Warmup toggle -->
+        <div class="row">
+          <button id="warmupToggleBtn" type="button" class="secondary" aria-pressed="false">
+            + Add Warmup
+          </button>
+        </div>
+
+        <!-- Warmup -->
+        <section id="warmupSection" class="subcard hidden">
+          <div class="row topRow">
+            <h3 class="grow">Warmup</h3>
+          </div>
+
+          <div class="grid">
+            <label>
+              Transition rest warmup → workout (seconds)
+              <input id="warmupTransitionRestSeconds" type="number" min="0" value="30" />
+            </label>
+            <div></div>
+          </div>
+
+          <p class="hint">Warmup exercises require a time in seconds.</p>
+
+          <div class="exerciseHeader">
+            <div>Exercise</div>
+            <div class="secsCol">Secs</div>
+            <div></div>
+          </div>
+
+          <div id="warmupList" class="exerciseList"></div>
+
+          <div class="row">
+            <button id="addWarmupBtn" class="secondary" type="button">+ Add warmup</button>
+          </div>
+        </section>
+
         <!-- Circuit B toggle -->
         <div class="row">
           <button id="toggleCircuitBBtn" type="button" class="secondary" aria-pressed="false">
@@ -148,6 +187,42 @@
 
           <div class="row">
             <button id="addExerciseBBtn" class="secondary" type="button">+ Add exercise</button>
+          </div>
+        </section>
+
+        <!-- Cooldown toggle -->
+        <div class="row">
+          <button id="cooldownToggleBtn" type="button" class="secondary" aria-pressed="false">
+            + Add Cooldown
+          </button>
+        </div>
+
+        <!-- Cooldown -->
+        <section id="cooldownSection" class="subcard hidden">
+          <div class="row topRow">
+            <h3 class="grow">Cooldown</h3>
+          </div>
+
+          <div class="grid">
+            <label>
+              Transition rest workout → cooldown (seconds)
+              <input id="cooldownTransitionRestSeconds" type="number" min="0" value="30" />
+            </label>
+            <div></div>
+          </div>
+
+          <p class="hint">Cooldown exercises require a time in seconds.</p>
+
+          <div class="exerciseHeader">
+            <div>Exercise</div>
+            <div class="secsCol">Secs</div>
+            <div></div>
+          </div>
+
+          <div id="cooldownList" class="exerciseList"></div>
+
+          <div class="row">
+            <button id="addCooldownBtn" class="secondary" type="button">+ Add cooldown</button>
           </div>
         </section>
 
